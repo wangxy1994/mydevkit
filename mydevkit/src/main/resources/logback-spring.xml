@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/base.xml" />
+	
+	<!-- close kafka log -->
+	<!-- 
+	<logger name="org.apache.kafka.common.utils" level="OFF"/>
+	<logger name="org.apache.kafka.clients.producer" level="OFF"/> 
+	-->
+</configuration>
