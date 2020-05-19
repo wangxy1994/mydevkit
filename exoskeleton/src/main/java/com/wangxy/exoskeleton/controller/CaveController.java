@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.wangxy.exoskeleton.api.BaiduTranslateUtil;
 import com.wangxy.exoskeleton.entity.TranslateResult;
@@ -112,7 +113,8 @@ public class CaveController {
 			tr.setSource(line);
 			String transResult = BaiduTranslateUtil.getApi().getTransResult(line, "zh", "en");
 			JSONObject transResultJson = JSONObject.parseObject(transResult);
-			tr.setTranslateResult(transResultJson.getJSONObject("trans_result").getString("dst"));
+			JSONArray resultArray = transResultJson.getJSONArray("trans_result");
+			tr.setTranslateResult(resultArray.getJSONObject(0).getString("dst"));
 			translateResults.add(tr);
 		}
 		return translateResults;
