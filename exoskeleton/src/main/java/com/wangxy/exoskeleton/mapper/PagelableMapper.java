@@ -53,4 +53,6 @@ public interface PagelableMapper {
      * @mbggenerated Mon May 18 01:19:17 CST 2020
      */
     int updateByPrimaryKey(Pagelable record);
+
+    int getMaxId();
 }

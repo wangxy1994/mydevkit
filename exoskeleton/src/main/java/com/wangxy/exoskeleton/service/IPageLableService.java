@@ -7,4 +7,6 @@ public interface IPageLableService {
     public Pagelable getPagelable(String pageId,String lableId,String lang);
 
     public void addPagelable(Pagelable pagelable);
+
+    public int getMaxId();
 }

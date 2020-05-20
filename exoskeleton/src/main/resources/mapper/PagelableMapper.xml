@@ -119,4 +119,7 @@
       and LABLE_ID = #{lableId,jdbcType=VARCHAR}
       and LANG = #{lang,jdbcType=VARCHAR}
   </update>
+  <select id="getMaxId"  resultType="int">
+    select  max(LABLE_ID) from  tsys_pagelable
+  </select>
 </mapper>

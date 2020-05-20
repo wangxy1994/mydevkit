@@ -40,10 +40,11 @@ public class CaveController {
 	@RequestMapping("/entrance")
 	public String entrance(@Param("path") String path) throws IOException {
 		System.out.println("path==="+path);
-		if (path.trim().length()==0) {
+		if (path==null||path.trim().length()==0) {
 			path = "G:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
+			path = "I:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
 		}
-		// path = "I:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
+
 		// path = "D:/work/IRM/avengers-systemweb/src/main/webapp/ifm/pub/js/transdate/TransDateSet.js";
 		// String content = IOUtils.toString(resourceLoader .getResource(path).getInputStream());
 		//
@@ -52,7 +53,7 @@ public class CaveController {
 		String[] folderAndFile = pathPart[0].split("/");
 		String pageId = folderAndFile[folderAndFile.length - 1];
 		// html处理
-		//htmlCodeDeal(path, pageId);
+		htmlCodeDeal(path, pageId);
 
 		List<String> list = FileUtils.readLines(new File(path));
 		// js代码处理。
@@ -78,7 +79,8 @@ public class CaveController {
 
 		// 翻译后，产生tsys_pagelable对象，用这个对象来产生i18N脚本，把对象插入数据库
 		// TODO 获取最大id
-		int id = 901000;
+		int id = pageLableService.getMaxId();
+		//int id = 901000;
 		id = id/100*100;
 		id += 100;
 		List<TranslateResult> tr = new ArrayList<TranslateResult>();
@@ -94,6 +96,24 @@ public class CaveController {
 			id++;
 		}
 		// 产生翻译表，产生脚本，插入数据库
+		List<String> pageLableSql = new ArrayList<String>();
+		if (tr.size()>0){
+			//pageLableSql
+		}
+		for (TranslateResult translateResult : tr) {
+			String enExample = "insert into tsys_pagelable (PAGE_ID, LABLE_ID, LANG, LABLE_INFO)\n" +
+					"values ('"+translateResult.getPageId()+"', '"+translateResult.getLabelId()+"', 'en', '"+translateResult.getTranslateResult()+"');\n";
+			String cnExample = "insert into tsys_pagelable (PAGE_ID, LABLE_ID, LANG, LABLE_INFO)\n" +
+					"values ('"+translateResult.getPageId()+"', '"+translateResult.getLabelId()+"', 'zh_CN', '"+translateResult.getSource()+"');\n";
+			pageLableSql.add(enExample);
+			pageLableSql.add(cnExample);
+
+		}
+		String[] pathPart = path.split("\\.");
+		String pageLableSqlPath = pathPart[0] + "_pagelabelSql.sql";
+
+		File resultFile = new File(pageLableSqlPath);
+		FileUtils.writeLines(resultFile,"UTF-8",pageLableSql);
 
 		// pageLableService.addPagelable(pagelable);
 

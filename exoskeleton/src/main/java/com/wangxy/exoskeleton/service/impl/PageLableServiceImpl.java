@@ -19,4 +19,9 @@ public class PageLableServiceImpl implements IPageLableService {
     public void addPagelable(Pagelable pagelable) {
         pagelableMapper.insert(pagelable);
     }
+
+    @Override
+    public int getMaxId() {
+        return pagelableMapper.getMaxId();
+    }
 }
