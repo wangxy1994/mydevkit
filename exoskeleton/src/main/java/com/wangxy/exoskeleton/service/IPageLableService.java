@@ -9,4 +9,6 @@ public interface IPageLableService {
     public void addPagelable(Pagelable pagelable);
 
     public int getMaxId();
+    
+    public Pagelable matchPagelable(String lableInfo);
 }

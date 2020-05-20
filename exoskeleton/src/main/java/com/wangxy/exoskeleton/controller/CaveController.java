@@ -25,8 +25,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.wangxy.exoskeleton.api.BaiduTranslateUtil;
+import com.wangxy.exoskeleton.entity.DictItem;
 import com.wangxy.exoskeleton.entity.Pagelable;
 import com.wangxy.exoskeleton.entity.TranslateResult;
+import com.wangxy.exoskeleton.service.IDictItemService;
 import com.wangxy.exoskeleton.service.IPageLableService;
 
 @RestController
@@ -35,14 +37,14 @@ public class CaveController {
 	@Autowired
 	IPageLableService pageLableService;
 	@Autowired
-	DefaultResourceLoader resourceLoader;
+	IDictItemService dictItemService;
 
 	@RequestMapping("/entrance")
 	public String entrance(@Param("path") String path) throws IOException {
 		System.out.println("path==="+path);
 		if (path==null||path.trim().length()==0) {
 			path = "G:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
-			path = "I:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
+//			path = "I:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
 		}
 
 		// path = "D:/work/IRM/avengers-systemweb/src/main/webapp/ifm/pub/js/transdate/TransDateSet.js";
@@ -50,12 +52,19 @@ public class CaveController {
 		//
 		// (path);
 		String[] pathPart = path.split("\\.");
-		String[] folderAndFile = pathPart[0].split("/");
+		//注意要替换转义字符\得用\\\\
+		String[] folderAndFile = pathPart[0].split("\\\\");
 		String pageId = folderAndFile[folderAndFile.length - 1];
-		// html处理
-		htmlCodeDeal(path, pageId);
+		// html处理。产生sql脚本
+		Map<String, TranslateResult> htmlCodeMap = htmlCodeDeal(path, pageId);
+		Set<String> dict = getDict(path);
+		//数据字典
+		generateDictSqlFile(dict,path);
+		
+		
 
 		List<String> list = FileUtils.readLines(new File(path));
+		//根据htmlCodeMap替换
 		// js代码处理。
 		// 固定替换
 		List<String> resultList = fixReplaceDeal(list);
@@ -68,52 +77,202 @@ public class CaveController {
 		File resultFile = new File(resultPath);
 		FileUtils.writeLines(resultFile, resultList);
 
-		String result = "hello";
-		System.out.println(result);
 		Pagelable pagelable = pageLableService.getPagelable(" ", "000001", "en");
 		return pagelable.getLableInfo();
 	}
 
-	private void htmlCodeDeal(String path, String pageId) throws IOException {
-		Map<String, String> chineseWords = jsoupDeal(path);
+	/**
+	 * 产生dict翻译表，产生脚本，插入数据库
+	 * @param dict
+	 * @param path 
+	 * @throws IOException 
+	 */
+	private void generateDictSqlFile(Set<String> dict, String path) throws IOException {
+		if (dict == null||dict.size()==0) {
+			return ;
+		}
+		List<String> dictSql = new ArrayList<String>();
+		List<String> cnDictSql = null;
+		List<String> enDictSql = null;
+		for (String dictEntryCode : dict) {
+			List<DictItem> cnDictItems = dictItemService.getCnDictItems(dictEntryCode);
+			cnDictSql = new ArrayList<String>();
+			enDictSql = new ArrayList<String>();
+			
+			for (DictItem dictItem : cnDictItems) {
+				cnDictSql.add(generateInsDictSql(dictItem, "zh_CN"));
+				//TODO 翻译dict中中文
+				String transResult = BaiduTranslateUtil.getApi().getTransResult(dictItem.getDictItemName(), "zh", "en");
+				JSONObject transResultJson = JSONObject.parseObject(transResult);
+				JSONArray resultArray = transResultJson.getJSONArray("trans_result");
+				String enDictName = resultArray.getJSONObject(0).getString("dst");
+				dictItem.setDictItemName(enDictName);
+				enDictSql.add(generateInsDictSql(dictItem, "en"));
+			}
+			
+			String cnLang = "zh_CN";
+			String delItemExample = "delete from tsys_dict_item where dict_entry_code='"+dictEntryCode+"' and lang='"+cnLang+"';\n";
+			dictSql.add(delItemExample);
+			dictSql.addAll(cnDictSql);
+			dictSql.add("\n");
+			dictSql.add("\n");
+			String enLang = "en";
+			String delEnItemExample = "delete from tsys_dict_item where dict_entry_code='"+dictEntryCode+"' and lang='"+enLang+"';\n";
+			dictSql.add(delEnItemExample);
+			dictSql.addAll(enDictSql);
+			dictSql.add("\n");
+			dictSql.add("\n");
+			
+		}
+		
+		
+		String[] pathPart = path.split("\\.");
+		String dictSqlPath = pathPart[0] + "_dictSql.sql";
 
+		File resultFile = new File(dictSqlPath);
+		FileUtils.writeLines(resultFile, "UTF-8", dictSql);
+	}
+
+	private String generateInsDictSql(DictItem dictItem, String lang) {
+		String example = "insert into tsys_dict_item (DICT_ITEM_CODE, DICT_ENTRY_CODE, DICT_ITEM_NAME, DICT_ITEM_ORDER, LIFECYCLE, PLATFORM, REL_CODE, LANG)\n" 
+				+ "values ("+"'" + dictItem.getDictItemCode() + "',"
+				+"'" + dictItem.getDictEntryCode()+ "',"
+				+"'" + dictItem.getDictItemName()+ "',"
+			    + dictItem.getDictItemOrder()+ ","
+				+"null" +","
+				+"null" +","
+				+"null" +","
+				+"'" + lang  +"'"
+				+");\n";
+		return example;
+	}
+
+	/**
+	 * 获取页面中所有的数据字典
+	 * @param path
+	 * @return
+	 * @throws IOException
+	 */
+	private Set<String> getDict(String path) throws IOException {
+		File input = new File(path);
+		Document doc = Jsoup.parse(input, "UTF-8");
+		
+		Set<String> dict = new HashSet<String>();
+		//jui:Init标签属性
+		Elements allDict = doc.getElementsByTag("jui:Init");
+		for (Element dictTag : allDict) {
+			String params = dictTag.attr("params");
+			String[] dictNames = params.split(",");
+			for (String dictName : dictNames) {
+				dict.add(dictName);
+			}
+		}
+		//input标签data-options里的url属性的&key=
+		Elements allInput = doc.getElementsByTag("input");
+		for (Element dictTag : allInput) {
+			String options = dictTag.attr("data-options");
+			if (options.contains("url") && options.contains("key=")) {
+				
+				options = toStrictJson(options);
+				
+				JSONObject jsonObject = JSONObject.parseObject(options);
+				String url = jsonObject.getString("url");
+				//获取url参数
+				String paramIn = url.substring(url.indexOf("?") + 1, url.length());
+				paramIn = paramIn.replaceAll("=", "\":\"");
+				paramIn = paramIn.replaceAll("&", "\",\"");
+				paramIn = "{\"" + paramIn + "\"}";
+				JSONObject urlParam = JSONObject.parseObject(paramIn);
+				dict.add(urlParam.getString("key"));
+			}
+			
+		}
+		return dict;
+	}
+
+	/**
+	 * html代码处理产生page脚本，返回中文翻译结果
+	 * @param path
+	 * @param pageId
+	 * @return
+	 * @throws IOException
+	 */
+	private Map<String, TranslateResult> htmlCodeDeal(String path, String pageId) throws IOException {
+		Map<String, String> chineseWords = jsoupDeal(path);
+		
+		Map<String, String> chineseWordsNeedTranslate = new HashMap<String, String>();
+		//翻译结果Map
+		Map<String, TranslateResult> translateMap = new HashMap<String, TranslateResult>();
+		
 		// 翻译后，产生tsys_pagelable对象，用这个对象来产生i18N脚本，把对象插入数据库
 		// TODO 获取最大id
 		int id = pageLableService.getMaxId();
 		//int id = 901000;
 		id = id/100*100;
 		id += 100;
-		List<TranslateResult> tr = new ArrayList<TranslateResult>();
+		List<TranslateResult> trAfterBaidu = new ArrayList<TranslateResult>();
 		for (Map.Entry<String, String> entry : chineseWords.entrySet()) {
 			// System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
 			TranslateResult res = new TranslateResult();
-			res.setPageId(pageId);
-			res.setLabelId(String.valueOf(id));
-			res.setSource(entry.getKey());
-			String transResult = BaiduTranslateUtil.getApi().getTransResult(res.getSource(), "auto", "en");
-			res.setTranslateResult(transResult);
-			tr.add(res);
-			id++;
+			
+			//现有的没有才去翻译.拿中文匹配
+			Pagelable matchPagelable = pageLableService.matchPagelable(entry.getKey());
+			if (matchPagelable != null) {
+				Pagelable pagelableInEn = pageLableService.getPagelable(matchPagelable.getPageId(), matchPagelable.getLableId(), "en");
+				res.setPageId(pagelableInEn.getPageId());
+				res.setLabelId(pagelableInEn.getLableId());
+				res.setSource(entry.getKey());
+				res.setTranslateResult(pagelableInEn.getLableInfo());
+			}else {
+				res.setPageId(pageId);
+				res.setLabelId(String.valueOf(id));
+				res.setSource(entry.getKey());
+				String transResult = BaiduTranslateUtil.getApi().getTransResult(res.getSource(), "auto", "en");
+				JSONObject transResultJson = JSONObject.parseObject(transResult);
+				JSONArray resultArray = transResultJson.getJSONArray("trans_result");
+				//TODO 翻译格式调整全部都是首字母大写
+				res.setTranslateResult(resultArray.getJSONObject(0).getString("dst"));
+				id++;
+				trAfterBaidu.add(res);
+			}
+			translateMap.put(res.getSource(), res);
 		}
 		// 产生翻译表，产生脚本，插入数据库
 		List<String> pageLableSql = new ArrayList<String>();
-		if (tr.size()>0){
+		if (trAfterBaidu.size()>0){
 			//pageLableSql
+			String delExample = "delete from tsys_pagelable where page_id='"+trAfterBaidu.get(0).getPageId()+"';";
+			pageLableSql.add(delExample);
 		}
-		for (TranslateResult translateResult : tr) {
+		Pagelable enLable = new Pagelable();
+		Pagelable cnLable = new Pagelable();
+		for (TranslateResult translateResult : trAfterBaidu) {
 			String enExample = "insert into tsys_pagelable (PAGE_ID, LABLE_ID, LANG, LABLE_INFO)\n" +
-					"values ('"+translateResult.getPageId()+"', '"+translateResult.getLabelId()+"', 'en', '"+translateResult.getTranslateResult()+"');\n";
+					"values ('"+translateResult.getPageId()+"', '"+translateResult.getLabelId()+"', 'en', '"+translateResult.getTranslateResult()+"');";
 			String cnExample = "insert into tsys_pagelable (PAGE_ID, LABLE_ID, LANG, LABLE_INFO)\n" +
-					"values ('"+translateResult.getPageId()+"', '"+translateResult.getLabelId()+"', 'zh_CN', '"+translateResult.getSource()+"');\n";
+					"values ('"+translateResult.getPageId()+"', '"+translateResult.getLabelId()+"', 'zh_CN', '"+translateResult.getSource()+"');";
 			pageLableSql.add(enExample);
 			pageLableSql.add(cnExample);
-
+			
+			enLable.setPageId(translateResult.getPageId());
+			enLable.setLableId(translateResult.getLabelId());
+			enLable.setLang("en");
+			enLable.setLableInfo(translateResult.getTranslateResult());
+			
+			cnLable.setPageId(translateResult.getPageId());
+			cnLable.setLableId(translateResult.getLabelId());
+			cnLable.setLang("cn");
+			cnLable.setLableInfo(translateResult.getSource());
+			pageLableService.addPagelable(enLable);
+			pageLableService.addPagelable(cnLable);
 		}
 		String[] pathPart = path.split("\\.");
 		String pageLableSqlPath = pathPart[0] + "_pagelabelSql.sql";
 
 		File resultFile = new File(pageLableSqlPath);
 		FileUtils.writeLines(resultFile,"UTF-8",pageLableSql);
+		return translateMap;
+		
 
 		// pageLableService.addPagelable(pagelable);
 
@@ -285,7 +444,7 @@ public class CaveController {
 		Elements allTh = doc.getElementsByTag("th");
 		for (Element th : allTh) {
 			String options = th.attr("data-options");
-			options = "{" + options + "}";
+			options = toStrictJson(options);
 			JSONObject jsonObject = JSONObject.parseObject(options);
 			if (jsonObject.getString("field").trim().length() > 0) {
 				chinese.put(jsonObject.getString("title"), jsonObject.getString("field"));
@@ -295,7 +454,7 @@ public class CaveController {
 		Elements allInput = doc.getElementsByTag("input");
 		for (Element inputTag : allInput) {
 			String options = inputTag.attr("data-options");
-			options = "{" + options + "}";
+			options = toStrictJson(options);
 			JSONObject jsonObject = JSONObject.parseObject(options);
 			chinese.put(jsonObject.getString("label"), jsonObject.getString("name"));
 		}
@@ -329,6 +488,15 @@ public class CaveController {
 		File resultFile = new File(resultPath);
 		FileUtils.writeLines(resultFile, list);
 		*/
+	}
+
+	private String toStrictJson(String options) {
+		options = options.replaceAll("'","");
+		options = options.replaceAll("\"","");
+		options = options.replaceAll(":","\":\"");
+		options = options.replaceAll(",","\",\"");
+		options = "{\"" + options +"\"}";
+		return options;
 	}
 
 }

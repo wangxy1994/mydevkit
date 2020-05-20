@@ -28,8 +28,31 @@ public class ReplaceTest {
 			System.out.println(string);
 		}
         
-        String path = "G:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
-        jsoupDeal(path);
+//        String path = "G:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
+//        jsoupDeal(path);
+        String url = "bizframe.dict.DictSvr.service?resCode=dict&opCode=items&key=K_DZSPBJLX";
+        String paramIn = url.substring(url.indexOf("?") + 1, url.length());
+        paramIn = paramIn.replaceAll("=","\":\"");
+        paramIn = paramIn.replaceAll("&","\",\"");
+        paramIn = "{\"" + paramIn +"\"}";
+        JSONObject jsonObject = JSONObject.parseObject(paramIn);
+        System.out.println(jsonObject.getString("key"));
+        
+        String options = "field:'busin_typesStr',width:300,title:'业务类别权限',sortable:false,formatter:render";
+        options = options.replaceAll("'","");
+        options = options.replaceAll("\"","");
+        options = options.replaceAll(":","\":\"");
+		options = options.replaceAll(",","\",\"");
+		options = "{\"" + options +"\"}";
+		
+		System.out.println(options);
+        JSONObject opt = JSONObject.parseObject(options);
+        System.out.println(opt.getString("title"));
+        
+        
+        String path = "G:/同步dev/国际化/virtualcombiBefore/virtualCombiList";
+//        path = "D:\work\IRM\avengers-pub\src\main\webapp\topjui\jsp\basedata\businright\businRightList";
+        System.out.println(path.split("/")[0]);
         
 
     }

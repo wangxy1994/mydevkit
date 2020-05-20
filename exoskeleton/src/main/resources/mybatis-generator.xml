@@ -5,7 +5,8 @@
 
 <generatorConfiguration>
     <!--数据库驱动-->
-    <classPathEntry location="C:\Users\Kerwin\.m2\com\oracle\ojdbc6\12.1.0.1\ojdbc6-12.1.0.1.jar"/>
+    <!-- <classPathEntry location="C:\Users\Kerwin\.m2\com\oracle\ojdbc6\12.1.0.1\ojdbc6-12.1.0.1.jar"/> -->
+    <classPathEntry location="D:\wangxyWork\ojdbc6-12.1.0.1.jar"/>
     <context id="context"    targetRuntime="MyBatis3" defaultModelType="flat">
         <!-- 生成注释配置 -->
         <commentGenerator>
@@ -17,9 +18,16 @@
             <property name="dateFormat" value="yyyy-MM-dd HH:mm:ss"/>
         </commentGenerator>
         <!--数据库链接地址账号密码-->
+        <!-- 
         <jdbcConnection driverClass="oracle.jdbc.driver.OracleDriver"
                         connectionURL="jdbc:oracle:thin:@localhost:1521:orcl" userId="irmaccounting"
                         password="irmaccounting">
+         -->
+        <jdbcConnection driverClass="oracle.jdbc.driver.OracleDriver"
+                        connectionURL="jdbc:oracle:thin:@192.168.0.109:1521:orcl" userId="irmaccounting3"
+                        password="irmaccounting3">
+            <!-- 解决空字段不生成 -->            
+			<property name="nullCatalogMeansCurrent" value="true"/>                        
         </jdbcConnection>
         <!-- 数值类型数据是否全部使用BigDecimal类型 -->
         <javaTypeResolver>
@@ -43,6 +51,16 @@
 
         <!--生成对应表及类名-->
         <table tableName="tsys_pagelable" domainObjectName="Pagelable" enableCountByExample="false"
+               enableUpdateByExample="false" enableDeleteByExample="false" enableSelectByExample="false"
+               selectByExampleQueryId="false">
+            <!-- 主键生成方式 -->
+            <!--<generatedKey column="u_id" sqlStatement="select seq_t_user.nextval from dual" identity="true"/>-->
+            <!-- 列名去除前缀 -->
+            <!--
+            <columnRenamingRule searchString="^[^_]+" replaceString=""/>
+            -->
+        </table>
+        <table schema="IRMACCOUNTING3" tableName="tsys_dict_item" domainObjectName="DictItem" enableCountByExample="false"
                enableUpdateByExample="false" enableDeleteByExample="false" enableSelectByExample="false"
                selectByExampleQueryId="false">
             <!-- 主键生成方式 -->

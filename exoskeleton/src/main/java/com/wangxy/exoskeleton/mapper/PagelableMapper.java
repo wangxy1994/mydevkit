@@ -1,6 +1,9 @@
 package com.wangxy.exoskeleton.mapper;
 
 import com.wangxy.exoskeleton.entity.Pagelable;
+
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -55,4 +58,9 @@ public interface PagelableMapper {
     int updateByPrimaryKey(Pagelable record);
 
     int getMaxId();
+    
+    List<Pagelable> matchExactly(@Param("lableInfo") String lableInfo);
+    
+    List<Pagelable> matchLike(@Param("lableInfo") String lableInfo);
+    
 }
