@@ -43,42 +43,43 @@ public class CaveController {
 	public String entrance(@Param("path") String path) throws IOException {
 		System.out.println("path==="+path);
 		if (path==null||path.trim().length()==0) {
-			path = "G:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
-//			path = "I:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
+			path = "G:/同步dev/国际化/virtualcombiBefore";
+//			path = "I:/同步dev/国际化/virtualcombiBefore/";
 		}
+        String[] pathPart = path.split("\\.");
+        //注意要替换转义字符\得用\\\\
+        String[] folderAndFile = pathPart[0].split("\\\\");
+        //文件夹名
+        String pageId = folderAndFile[folderAndFile.length - 1];
 
-		// path = "D:/work/IRM/avengers-systemweb/src/main/webapp/ifm/pub/js/transdate/TransDateSet.js";
-		// String content = IOUtils.toString(resourceLoader .getResource(path).getInputStream());
-		//
-		// (path);
-		String[] pathPart = path.split("\\.");
-		//注意要替换转义字符\得用\\\\
-		String[] folderAndFile = pathPart[0].split("\\\\");
-		String pageId = folderAndFile[folderAndFile.length - 1];
-		// html处理。产生sql脚本
-		Map<String, TranslateResult> htmlCodeMap = htmlCodeDeal(path, pageId);
-		Set<String> dict = getDict(path);
-		//数据字典
-		generateDictSqlFile(dict,path);
-		
-		
+        File file = new File(path);
+        File[] tempList = file.listFiles();
+        List<String> fileList= new ArrayList<String>();
+        for (File file1 : tempList) {
+            String absolutePath = file1.getAbsolutePath();
 
-		List<String> list = FileUtils.readLines(new File(path));
-		//根据htmlCodeMap替换
-		// js代码处理。
-		// 固定替换
-		List<String> resultList = fixReplaceDeal(list);
-		// 固定替换后进行翻译替换
-		// resultList = translateDeal(resultList);
+            // html处理。产生sql脚本
+            Map<String, TranslateResult> htmlCodeMap = htmlCodeDeal(absolutePath, pageId);
+            Set<String> dict = getDict(absolutePath);
+            //数据字典
+            generateDictSqlFile(dict,absolutePath);
 
-		// 生成文件
 
-		String resultPath = pathPart[0] + "_res_." + pathPart[1];
-		File resultFile = new File(resultPath);
-		FileUtils.writeLines(resultFile, resultList);
 
-		Pagelable pagelable = pageLableService.getPagelable(" ", "000001", "en");
-		return pagelable.getLableInfo();
+            List<String> list = FileUtils.readLines(new File(absolutePath));
+            //根据htmlCodeMap替换
+            // js代码处理。
+            // 固定替换
+            List<String> resultList = fixReplaceDeal(list);
+            // 固定替换后进行翻译替换
+            // resultList = translateDeal(resultList);
+
+            // 生成文件
+            String resultPath = pathPart[0] + "_res_." + pathPart[1];
+            File resultFile = new File(resultPath);
+            FileUtils.writeLines(resultFile, resultList);
+        }
+		return "OK";
 	}
 
 	/**
