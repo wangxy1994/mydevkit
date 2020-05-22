@@ -41,11 +41,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 	 */
 	@Override
 	public void autoDealI18N(String path) throws IOException {
-		String[] pathPart = path.split("\\.");
-        //注意要替换转义字符\得用\\\\
-        String[] folderAndFile = pathPart[0].split("\\\\");
-        //文件夹名
-        String pageId = folderAndFile[folderAndFile.length - 1];
+        String pageId = null;
         String directoryPath = null;
         File file = new File(path);
         File[] tempList = null ;
@@ -55,8 +51,12 @@ public class DealI18NServiceImpl implements IDealI18NService {
         	pageId = directoryPath;
 		}else {
 			tempList[0]= file;
-			directoryPath = file.getPath();
-        	pageId = file.getName();
+			directoryPath = file.getParent();
+			String[] pathPart = path.split("\\.");
+			//注意要替换转义字符\得用\\\\
+			String[] folderAndFile = pathPart[0].split("\\\\");
+			//文件名
+			pageId = folderAndFile[folderAndFile.length - 1];
 		}
         Set<String> dictSet = new HashSet<String>();
         Map<String, String> chineseWords = new HashMap<String, String>();
@@ -68,9 +68,9 @@ public class DealI18NServiceImpl implements IDealI18NService {
             dictSet.addAll(getDict(absolutePath));
         }
         
-		String dictSqlPath = path+"/" + pageId+"_dictSql.sql";
+		String dictSqlPath = directoryPath+"/" + pageId+"_dictSql.sql";
 		generateDictSqlFile(dictSet,dictSqlPath);
-        String pageSqlPath = path+"/" + pageId+"_pageSql.sql";
+        String pageSqlPath = directoryPath+"/" + pageId+"_pageSql.sql";
         // html处理。产生sql脚本
         Map<String, TranslateResult> htmlCodeMap = htmlCodeDeal(pageSqlPath, pageId,chineseWords);
         // 根据数据库,用中文查询对应的标签语法，并替换到文件中
