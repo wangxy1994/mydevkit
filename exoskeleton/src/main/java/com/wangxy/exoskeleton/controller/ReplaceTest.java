@@ -54,6 +54,14 @@ public class ReplaceTest {
 //        path = "D:\work\IRM\avengers-pub\src\main\webapp\topjui\jsp\basedata\businright\businRightList";
         System.out.println(path.split("/")[0]);
         
+        String line1 = "editable:true,required:false,validType:['length[0,64]','alphaDash']";
+        String regex = "\\[.*\\]";
+//		String regex = "['](.*?)[']";
+        List<String> matchString = getMatchString(line1, regex);
+		for (String matchWord : matchString) {
+			System.out.println(matchWord);
+		}
+        
 
     }
     

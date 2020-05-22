@@ -11,4 +11,6 @@ public interface IDictItemService {
     public void addDictItem(DictItem dictItem);
 
     public List<DictItem> getCnDictItems(String dictEntryCode);
+
+	List<DictItem> getDictItems(String dictEntryCode, String lang);
 }

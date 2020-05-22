@@ -1,6 +1,8 @@
 package com.wangxy.exoskeleton.api;
 
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.wangxy.exoskeleton.api.translate.TransApi;
 
 public class BaiduTranslateUtil {
@@ -24,4 +26,15 @@ public class BaiduTranslateUtil {
     public static void setApi(TransApi api) {
         BaiduTranslateUtil.api = api;
     }
+    
+    public static String translate4PrdUpt(String cnWord,String sourceLang,String targetLang) {
+    	String transResult = getApi().getTransResult(cnWord, sourceLang, targetLang);
+		JSONObject transResultJson = JSONObject.parseObject(transResult);
+		JSONArray resultArray = transResultJson.getJSONArray("trans_result");
+		String targetLangWord = resultArray.getJSONObject(0).getString("dst");
+		return targetLangWord;
+    }
+
+	
+    
 }

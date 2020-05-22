@@ -11,4 +11,6 @@ public interface IPageLableService {
     public int getMaxId();
     
     public Pagelable matchPagelable(String lableInfo);
+    
+    public Pagelable matchPagelableExactly(String lableInfo);
 }

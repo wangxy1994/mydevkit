@@ -32,6 +32,11 @@ public class DictItemServiceImpl implements IDictItemService {
 			return nullDictItem;
 		}
 	}
+	
+	@Override
+	public List<DictItem> getDictItems(String dictEntryCode, String lang) {
+		return dictItemMapper.getDictItems(dictEntryCode, lang);
+	}
     
 
 }
