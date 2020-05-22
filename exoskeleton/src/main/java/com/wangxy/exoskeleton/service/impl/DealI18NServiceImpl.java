@@ -46,9 +46,18 @@ public class DealI18NServiceImpl implements IDealI18NService {
         String[] folderAndFile = pathPart[0].split("\\\\");
         //文件夹名
         String pageId = folderAndFile[folderAndFile.length - 1];
-
+        String directoryPath = null;
         File file = new File(path);
-        File[] tempList = file.listFiles();
+        File[] tempList = null ;
+        if (file.isDirectory()) {
+        	tempList = file.listFiles();
+        	directoryPath = path;
+        	pageId = directoryPath;
+		}else {
+			tempList[0]= file;
+			directoryPath = file.getPath();
+        	pageId = file.getName();
+		}
         Set<String> dictSet = new HashSet<String>();
         Map<String, String> chineseWords = new HashMap<String, String>();
         for (File file1 : tempList) {
