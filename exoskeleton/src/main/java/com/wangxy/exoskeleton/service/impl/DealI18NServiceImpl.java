@@ -40,15 +40,17 @@ public class DealI18NServiceImpl implements IDealI18NService {
 	 * @see com.wangxy.exoskeleton.controller.IDealI18NService#autoDealI18N(java.lang.String)
 	 */
 	@Override
+	@Transactional
 	public void autoDealI18N(String path) throws IOException {
         String pageId = null;
         String directoryPath = null;
         File file = new File(path);
-        File[] tempList = null ;
+        File[] tempList = new File[1];
         if (file.isDirectory()) {
         	tempList = file.listFiles();
         	directoryPath = path;
-        	pageId = directoryPath;
+        	String[] split = directoryPath.split("\\\\");
+        	pageId = split[split.length-1];
 		}else {
 			tempList[0]= file;
 			directoryPath = file.getParent();
@@ -180,10 +182,17 @@ public class DealI18NServiceImpl implements IDealI18NService {
 		for (Element dictTag : allInput) {
 			String options = dictTag.attr("data-options");
 			if (options.contains("url") && options.contains("key=")) {
-				
+				options = options.replaceAll("	", "");
+				options = options.replaceAll("&codes=(.*?)',", "',");//勉强模式匹配codes的值，把codes的配置替换为空
 				options = toStrictJson(options);
-				
-				JSONObject jsonObject = JSONObject.parseObject(options);
+				JSONObject jsonObject;
+				try {
+					jsonObject = JSONObject.parseObject(options);
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.out.println("错误options="+options);
+					throw e;
+				}
 				String url = jsonObject.getString("url");
 				//获取url参数
 				String paramIn = url.substring(url.indexOf("?") + 1, url.length());
@@ -238,7 +247,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 					String transResult = BaiduTranslateUtil.translate4PrdUpt(res.getSource(), "auto", "en");
 					res.setTranslateResult(firstUpperFormat(transResult, " "));
 				}
-				pageLableService.addPagelable(convertTranslateResultToPagelable(res));
+//				pageLableService.addPagelable(convertTranslateResultToPagelable(res));
 				wordNeedGenSql.add(res);
 				id++;
 			}
@@ -253,6 +262,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 		}
 		Pagelable enLable = new Pagelable();
 		Pagelable cnLable = new Pagelable();
+		System.out.println("开始产生html翻译脚本并插入");
 		for (TranslateResult translateResult : wordNeedGenSql) {
 			String enExample = "insert into tsys_pagelable (PAGE_ID, LABLE_ID, LANG, LABLE_INFO)\n" +
 					"values ('"+translateResult.getPageId()+"', '"+translateResult.getLabelId()+"', 'en', '"+translateResult.getTranslateResult()+"');";
@@ -268,7 +278,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 			
 			cnLable.setPageId(translateResult.getPageId());
 			cnLable.setLableId(translateResult.getLabelId());
-			cnLable.setLang("cn");
+			cnLable.setLang("zh_CN");
 			cnLable.setLableInfo(translateResult.getSource());
 			pageLableService.addPagelable(enLable);
 			pageLableService.addPagelable(cnLable);
@@ -504,33 +514,82 @@ public class DealI18NServiceImpl implements IDealI18NService {
 		Elements allInput = doc.getElementsByTag("input");
 		for (Element inputTag : allInput) {
 			String options = inputTag.attr("data-options");
+			System.out.println("原始options="+options);
+//			options = options.replaceAll("\\n", "");
+			options = options.replace(",groupSeparator:','", "");//特殊情况
+			options = options.replaceAll("	", "");
+			options = options.replaceAll("&codes=(.*?)',", "',");//勉强模式匹配codes的值，把codes的配置替换为空
+			
+//			options = options.replaceAll("\r\n|\r|\n", "");
+			options = options.replaceAll("\r", "");
+			options = options.replaceAll("\n", "");
+			System.out.println("去换行后="+options);
+			options = options.replaceAll("\\{(.*)\\}", "temp");//替换buttonParams
 			options = toStrictJson(options);
-			options = options.replaceAll("\\[(.*)\\]", "temp");
-			JSONObject jsonObject = JSONObject.parseObject(options);
+			options = options.replaceAll("\\[(.*)\\]", "temp");//替换validType
+			JSONObject jsonObject = null;
+			try {
+				jsonObject = JSONObject.parseObject(options);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("错误options="+options);
+				throw e;
+			}
 			
 			String key = jsonObject.getString("label");
 			if (!StringUtils.isEmpty(key)) {
 				chinese.put(key, jsonObject.getString("name"));
 			}
 		}
-		//a标签包裹值
+		//a标签包裹值，属性值text
 		Elements allATag = doc.getElementsByTag("a");
 		for (Element aTag : allATag) {
 //			chinese.put(aTag.text(), aTag.attr("id"));
-			String key = aTag.text();
-			if (!StringUtils.isEmpty(key)) {
-				chinese.put(key, "");
+			if (!StringUtils.isEmpty(aTag.text())) {
+				chinese.put(aTag.text(), "");
+			}
+			String options = aTag.attr("data-options");
+			if (options.contains("text")) {
+				System.out.println("原始options="+options);
+				options = toStrictJson(options);
+				JSONObject jsonObject = null;
+				try {
+					jsonObject = JSONObject.parseObject(options);
+				} catch (Exception e) {
+					e.printStackTrace();
+					System.out.println("错误options="+options);
+					throw e;
+				}
+				String key = jsonObject.getString("text");
+				if (!StringUtils.isEmpty(key)) {
+					chinese.put(key, "");
+				}
 			}
 		}
 		//legend标签包裹值
-		Elements allLegendTag = doc.getElementsByTag("a");
+		Elements allLegendTag = doc.getElementsByTag("legend");
 		for (Element legend : allLegendTag) {
 			String key = legend.text();
 			if (!StringUtils.isEmpty(key)) {
 				chinese.put(key, "");
 			}
 		}
-		
+		//label标签包裹值
+		Elements allLabelTag = doc.getElementsByTag("label");
+		for (Element label : allLabelTag) {
+			String key = label.text();
+			if (!StringUtils.isEmpty(key)) {
+				chinese.put(key, "");
+			}
+		}
+		//div标签属性title
+		Elements allDiv = doc.getElementsByTag("div");
+		for (Element div : allDiv) {
+			String title = div.attr("title");
+			if (!StringUtils.isEmpty(title)) {
+				chinese.put(title, "");
+			}
+		}
 		
 		
 		
@@ -583,7 +642,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 	        newWord+=" ";
 	        newWord+=word;
 	    }
-		return newWord;
+		return newWord.replaceFirst(" ", "");//用于去掉第一个空格
 	}
 
 

@@ -1,4 +1,4 @@
-package com.wangxy.exoskeleton.controller;
+package com.wangxy.exoskeleton;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,11 +61,71 @@ public class ReplaceTest {
 		for (String matchWord : matchString) {
 			System.out.println(matchWord);
 		}
+		
+		String line2 = "width:200,readonly:true,readonly:true,required:true,value:top.currUserName,buttonText:'',buttonIcon:'fa fa-search', buttonParams:{'text':'user_name','value':'user_id','calBackFun':null}, onClickButton:juipub.showUserSelector,buttonAlign:'right'";
+        String regex2 = "\\{(.*)\\}";
+//		String regex = "['](.*?)[']";
+        List<String> matchString2 = getMatchString(line2, regex2);
+		for (String matchWord : matchString2) {
+			System.out.println(matchWord);
+			System.out.println(line2.replace(matchWord, "temp"));
+		}
+		
+//		path = "D:\\work\\IRM\\avengers-fx\\src\\main\\webapp\\topjui\\jsp\\fx\\biz\\tradeconfirm\\foreignExchangeSpotDetail.jsp";
+		path = "D:\\work\\IRM\\avengers-fx\\src\\main\\webapp\\topjui\\jsp\\fx\\biz\\metaltrade\\metaltrans";
+		String pageId = null;
+        String directoryPath = null;
+        File file = new File(path);
+        File[] tempList = new File[1];
+        if (file.isDirectory()) {
+        	tempList = file.listFiles();
+        	directoryPath = path;
+        	String[] split = directoryPath.split("\\\\");
+        	pageId = split[split.length-1];
+		}else {
+			tempList[0]= file;
+			directoryPath = file.getParent();
+			String[] pathPart = path.split("\\.");
+			//注意要替换转义字符\得用\\\\
+			String[] folderAndFile = pathPart[0].split("\\\\");
+			//文件名
+			pageId = folderAndFile[folderAndFile.length - 1];
+		}
+		String dictSqlPath = directoryPath+"/" + pageId+"_dictSql.sql";
+        String pageSqlPath = directoryPath+"/" + pageId+"_pageSql.sql";
+        System.out.println("dictSqlPath=="+dictSqlPath);
+        System.out.println("pageSqlPath=="+pageSqlPath);
         
+        
+        String oriOptions = "width:200,readonly:true,readonly:true,required:true,value:top.currUserName,buttonText:'',buttonIcon:'fa fa-search', buttonParams:{'text':'user_name','value':'user_id','calBackFun':null}, onClickButton:juipub.showUserSelector,buttonAlign:'right'";
+        oriOptions = oriOptions.replaceAll("\\{(.*)\\}", "temp");
+        System.out.println("afterReplace1=="+oriOptions);
+		oriOptions = toStrictJson(oriOptions);
+		System.out.println("afterReplace2=="+oriOptions);
+		oriOptions = oriOptions.replaceAll("\\[(.*)\\]", "temp");
+		System.out.println("afterReplace3=="+oriOptions);
+		JSONObject jsonObject1 = null;
+		try {
+			jsonObject1 = JSONObject.parseObject(oriOptions);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw e;
+		}
 
+		options = options.replaceAll("\\n", "");
     }
     
-    
+    public static String toStrictJson(String options) {
+		String regex = "\\[.*\\]";
+		options = options.replaceAll(regex,"validType");
+		
+		options = options.replaceAll("'","");
+		options = options.replaceAll("\"","");
+		options = options.replaceAll(":","\":\"");
+		options = options.replaceAll(",","\",\"");
+		options = "{\"" + options +"\"}";
+		return options;
+	}
     /**
 	 * 获取固定情况下的中文，field，翻译作为集合
 	 * 
