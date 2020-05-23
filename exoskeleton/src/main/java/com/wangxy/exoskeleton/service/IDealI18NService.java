@@ -48,7 +48,7 @@ public interface IDealI18NService {
 
 	String gen18NTag(TranslateResult translateResult);
 
-	List<String> fixReplaceDeal(List<String> oriList) throws IOException;
+	List<String> fixReplaceDeal4JsGenMap(List<String> oriList,Map<String, TranslateResult> jsCodeMap) throws IOException;
 
 	/**
 	 * 剩余部分翻译
@@ -66,7 +66,7 @@ public interface IDealI18NService {
 	List<TranslateResult> generateTranslateResult(Set<String> lineToTranslate);
 
 	/**
-	 * 获得需要翻译的文本
+	 * 获得需要翻译的文本(单引号/双引号包裹的中文)
 	 * @param line
 	 * @return
 	 */
@@ -85,7 +85,7 @@ public interface IDealI18NService {
 	 * @param inLine
 	 * @return
 	 */
-	String autoReplaceDeal(String inLine);
+	String fixReplaceDeal(String inLine);
 
 	boolean needAutoReplace(String inLine);
 

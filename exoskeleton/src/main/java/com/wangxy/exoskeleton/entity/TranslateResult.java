@@ -11,6 +11,11 @@ public class TranslateResult {
     private String source;
 
     private String translateResult;
+    
+    /**
+     * jsMsg国际化文件中的key
+     */
+    private String jsonKey;
 
     public String getPageId() {
         return pageId;
@@ -51,4 +56,14 @@ public class TranslateResult {
     public void setTranslateResult(String translateResult) {
         this.translateResult = translateResult;
     }
+
+	public String getJsonKey() {
+		return jsonKey;
+	}
+
+	public void setJsonKey(String jsonKey) {
+		this.jsonKey = jsonKey;
+	}
+    
+    
 }

@@ -48,6 +48,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
         File[] tempList = new File[1];
         if (file.isDirectory()) {
         	tempList = file.listFiles();
+        	//要只取一层目录下的文件
         	directoryPath = path;
         	String[] split = directoryPath.split("\\\\");
         	pageId = split[split.length-1];
@@ -76,22 +77,84 @@ public class DealI18NServiceImpl implements IDealI18NService {
         // html处理。产生sql脚本
         Map<String, TranslateResult> htmlCodeMap = htmlCodeDeal(pageSqlPath, pageId,chineseWords);
         // 根据数据库,用中文查询对应的标签语法，并替换到文件中
+        //存放js中文对应的翻译结果
+        Map<String, TranslateResult> jsCodeMap = new HashMap<String, TranslateResult>();
         for (File file1 : tempList) {
         	 String absolutePath = file1.getAbsolutePath();
 
              List<String> list = FileUtils.readLines(new File(absolutePath));
-             // 固定替换
-             List<String> resultListAfterHtml = fixReplaceDeal4Html(list,htmlCodeMap);
              // js代码处理。
-             // 固定替换
-             List<String> resultList = fixReplaceDeal(resultListAfterHtml);
-             // 固定替换后进行翻译替换
-             // resultList = translateDeal(resultList);
-
+             // 固定替换，固定替换后产生其他中文翻译结果的key
+             List<String> resultList = fixReplaceDeal4JsGenMap(list,jsCodeMap);
              //直接覆盖原文件
              File resultFile = new File(absolutePath);
              FileUtils.writeLines(resultFile, resultList);
         }
+        //js中文产生翻译结果。产生json对象，产生文件
+        generateJsMsgJson(jsCodeMap,directoryPath,pageId);
+        
+        for (File file1 : tempList) {
+        	String absolutePath = file1.getAbsolutePath();
+        	
+        	List<String> list = FileUtils.readLines(new File(absolutePath));
+        	// 固定替换
+        	List<String> resultListAfterHtml = fixReplaceDeal4Html(list,htmlCodeMap);
+        	// js代码处理。
+        	// 翻译替换
+        	//List<String> resultList = replaceDeal4Js(resultListAfterHtml,jsCodeMap);
+        	// 固定替换后进行翻译替换
+        	// resultList = translateDeal(resultList);
+        	
+        	//直接覆盖原文件
+        	File resultFile = new File(absolutePath);
+        	FileUtils.writeLines(resultFile, resultListAfterHtml);
+        }
+        
+        
+        System.out.println("========================================");    
+        System.out.println("<%@taglib uri='/WEB-INF/jui.tld' prefix='jui'%>");
+        System.out.println("<%@include file=\"/topjui/jsp/main/jsinc.jsp\"%>");
+        System.out.println("<script Language=\"JavaScript\" src=\"js/"+pageId+".<%=LangValue%>.js\"></script>");
+        System.out.println("<% \n String LangValue=\"\"; \n LangValue=(String)session.getAttribute(\"lang\"); \n %>");
+        System.out.println(pageId+"Msg.tempInfo");
+        System.out.println("========================================");    
+	}
+
+	private void generateJsMsgJson(Map<String, TranslateResult> jsCodeMap,String directoryPath, String pageId) throws IOException {
+//		generateI18nJsFile(jsCodeMap,i18nJsDirectoryPath);
+        Map<String, TranslateResult> tempJsCodeMap = new HashMap<String, TranslateResult>();
+        
+        Map<String, Object> cnJsMap = new HashMap<String, Object>();
+        Map<String, Object> enJsMap = new HashMap<String, Object>();
+        int jsonKeyId = 1;
+        for (Map.Entry<String, TranslateResult> entry : jsCodeMap.entrySet()) {
+			// System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
+			TranslateResult res = new TranslateResult();
+			// 现有的没有才去翻译.拿中文匹配
+			res.setPageId(pageId);
+			res.setSource(entry.getKey());
+			String lineToTranslate = res.getSource().substring(1,res.getSource().length()-1);
+			String transResult = BaiduTranslateUtil.translate4PrdUpt(lineToTranslate, "auto", "en");
+			res.setTranslateResult(transResult);
+			res.setJsonKey(res.getPageId()+"MsgInfo"+jsonKeyId);//pageidMsgInfo+自增数字是为了避免重复，后面产生文件后还要自己修改
+//				pageLableService.addPagelable(convertTranslateResultToPagelable(res));
+			tempJsCodeMap.put(res.getSource(), res);
+			
+			cnJsMap.put(res.getJsonKey(), lineToTranslate);
+			enJsMap.put(res.getJsonKey(), res.getTranslateResult());
+			jsonKeyId++;
+        }
+        JSONObject enjson = new JSONObject(enJsMap);
+        JSONObject cnjson = new JSONObject(cnJsMap);
+        String i18nJsDirectoryPath = directoryPath+"/js/";
+        String cnJsPath = i18nJsDirectoryPath + pageId+".zh_CN.js";
+        String enJsPath = i18nJsDirectoryPath + pageId+".en.js";
+        
+        File cnJs = new File(cnJsPath);
+        FileUtils.write(cnJs, pageId+"Msg="+cnjson.toJSONString(cnjson,true));
+        File enJs = new File(enJsPath);
+    	FileUtils.write(enJs, pageId+"Msg="+enjson.toJSONString(enjson,true));
+		
 	}
 
 	/* (non-Javadoc)
@@ -329,6 +392,30 @@ public class DealI18NServiceImpl implements IDealI18NService {
 		return reultLines;
 	}
 	
+	public List<String> replaceDeal4Js(List<String> oriList,Map<String, TranslateResult> jsCodeMap) throws IOException {
+		List<String> reultLines = new ArrayList<>();
+		boolean isJsCode = false;
+		for (String ss : oriList) {
+			String resultLine =ss;
+			if (ss.contains("<script>")) {
+				isJsCode = true;
+			}
+			if (!isJsCode) {
+				//遍历key，如果包括key，就去替换
+				for (Map.Entry<String, TranslateResult> entry : jsCodeMap.entrySet()) {
+					//TODO 优化。如果替换了一次就退出单层循环.如果确定一行只有一句中文
+					if (ss.contains(entry.getKey())) {
+						TranslateResult translateResult = entry.getValue();
+						resultLine = resultLine.replace(entry.getKey(), genJsMsg(translateResult));
+					}
+				}
+			}
+			reultLines.add(resultLine);
+		}
+		// System.out.println(sb.toString());
+		return reultLines;
+	}
+	
 	
 	/* (non-Javadoc)
 	 * @see com.wangxy.exoskeleton.controller.IDealI18NService#gen18NTag(com.wangxy.exoskeleton.entity.TranslateResult)
@@ -338,11 +425,16 @@ public class DealI18NServiceImpl implements IDealI18NService {
 		return "<jui:I18N page=\""+translateResult.getPageId()+"\" id=\""+translateResult.getLabelId()+"\" ></jui:I18N>";
 	}
 
+	public String genJsMsg(TranslateResult translateResult) {
+//		return translateResult.getPageId()+"Msg."+translateResult.getJsonKey();
+		return translateResult.getJsonKey();
+	}
+
 	/* (non-Javadoc)
 	 * @see com.wangxy.exoskeleton.controller.IDealI18NService#fixReplaceDeal(java.util.List)
 	 */
 	@Override
-	public List<String> fixReplaceDeal(List<String> oriList) throws IOException {
+	public List<String> fixReplaceDeal4JsGenMap(List<String> oriList,Map<String, TranslateResult> jsCodeMap) throws IOException {
 		List<String> reultLines = new ArrayList<>();
 		StringBuilder sb = new StringBuilder();
 		boolean isJsCode = false;
@@ -353,7 +445,15 @@ public class DealI18NServiceImpl implements IDealI18NService {
 			}
 			String resultLine =ss;
 			if (isJsCode) {
-				resultLine = autoReplaceDeal(ss);
+				resultLine = fixReplaceDeal(ss);
+				// 如果还有''或者""包含中文,就是要翻译的（包含中文且包含'"）(不包含//这样处理快一些)，放进map
+				if (!resultLine.contains("//")&&(resultLine.contains("'")||resultLine.contains("\""))) {
+					Set<String> translateLine = getTranslateLine(resultLine);
+					for (String string : translateLine) {
+						jsCodeMap.put(string, null);
+					}
+				}
+				
 			}
 			reultLines.add(resultLine);
 		}
@@ -382,7 +482,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 		//中文字符串-----对应翻译结果对象（id,翻译结果1）
 		List<TranslateResult> translateResults = generateTranslateResult(lineToTranslate);
 
-		//循环再次替换
+		//循环替换
 		List<String> reultLines = new ArrayList<>();
 		StringBuilder sb = new StringBuilder();
 		for (String ss : oriList) {
@@ -422,7 +522,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 	@Override
 	public Set<String> getTranslateLine(String line) {
 		Set<String> translateLine = new HashSet<String>();
-		String regex = "'(.*)'";
+		String regex = "[\"|'][^,]*?[\"|']";
 		List<String> matchString = getMatchString(line, regex);
 		for (String matchWord : matchString) {
 			if (isContainChinese(matchWord)){
@@ -441,11 +541,9 @@ public class DealI18NServiceImpl implements IDealI18NService {
 
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(sourceString);
-		if(matcher.find()){
-			for(int i=0; i<=matcher.groupCount(); i++){
-				matchString.add(matcher.group(i));
-			}
-		}
+		while (matcher.find()) { //此处find（）每次被调用后，会偏移到下一个匹配
+			matchString.add(matcher.group());//获取当前匹配的值
+        }
 		return matchString;
 	}
 	/**
@@ -466,7 +564,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 	 * @see com.wangxy.exoskeleton.controller.IDealI18NService#autoReplaceDeal(java.lang.String)
 	 */
 	@Override
-	public String autoReplaceDeal(String inLine) {
+	public String fixReplaceDeal(String inLine) {
 		inLine = inLine.replaceAll("['|\"]提示['|\"]", "dialogMsg.info");
 		inLine = inLine.replaceAll("['|\"]警告['|\"]", "dialogMsg.warn");
 		inLine = inLine.replaceAll("['|\"]确认['|\"]", "dialogMsg.confirm");

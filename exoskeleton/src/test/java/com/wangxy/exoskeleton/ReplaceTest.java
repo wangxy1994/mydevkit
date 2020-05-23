@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -26,7 +27,19 @@ public class ReplaceTest {
         Set<String> translateLine = getTranslateLine(line);
         for (String string : translateLine) {
 			System.out.println(string);
+			System.out.println(string.substring(1,string.length()-1));
+			System.out.println("\"8976\"".substring(1,"\"8976\"".length()-1));
 		}
+        
+        Map<String, Object> enJsMap = new HashMap<String, Object>();
+        enJsMap.put("msgInfo1", "There is no information configured for this currency pair");
+        enJsMap.put("msgInfo2", "non-existent");
+        JSONObject enjson = new JSONObject(enJsMap);
+        System.out.println(enjson.toJSONString());
+        System.out.println(enjson.toJSONString(enjson, true));
+        String enJsPath = "D:\\work\\IRM\\avengers-fx\\src\\main\\webapp\\topjui\\jsp\\fx\\biz\\metaltrade\\metaltrans\\js\\test.en.js";
+		File enJs = new File(enJsPath );
+        FileUtils.write(enJs, "testMsg="+enjson.toJSONString(enjson, true));
         
 //        String path = "G:/同步dev/国际化/virtualcombiBefore/virtualCombiList.jsp";
 //        jsoupDeal(path);
@@ -162,7 +175,7 @@ public class ReplaceTest {
 	}
 	private static Set<String> getTranslateLine(String line) {
 		Set<String> translateLine = new HashSet<String>();
-		String regex = "'[^,]*'";
+		String regex = "[\"|'][^,]*?[\"|']";
 //		String regex = "['](.*?)[']";
 		List<String> matchString = getMatchString(line, regex);
 		for (String matchWord : matchString) {
@@ -184,11 +197,9 @@ public class ReplaceTest {
 
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(sourceString);
-		if(matcher.find()){
-			for(int i=0; i<=matcher.groupCount(); i++){
-				matchString.add(matcher.group(i));
-			}
-		}
+		while (matcher.find()) { //此处find（）每次被调用后，会偏移到下一个匹配
+			matchString.add(matcher.group());//获取当前匹配的值
+        }
 		return matchString;
 	}
 	/**
