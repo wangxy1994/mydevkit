@@ -385,7 +385,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 				//遍历key，如果包括key，就去替换
 				for (Map.Entry<String, TranslateResult> entry : htmlCodeMap.entrySet()) {
 					
-					if (ss.contains(entry.getKey())) {
+					if (ss.contains("'"+entry.getKey()+"'")||ss.contains("\""+entry.getKey()+"\"")||ss.contains(">"+entry.getKey()+"<")) {
 						TranslateResult translateResult = entry.getValue();
 						resultLine = resultLine.replace(entry.getKey(), gen18NTag(translateResult));
 					}
@@ -801,6 +801,6 @@ public class DealI18NServiceImpl implements IDealI18NService {
         }
 		
 	}
-
+	
 
 }

@@ -33,15 +33,16 @@ public class PageLableServiceImpl implements IPageLableService {
 		System.out.println("lableInfo===="+lableInfo);
 		List<Pagelable> exactlyList = pagelableMapper.matchExactly(lableInfo);
 		if (exactlyList == null||exactlyList.size()==0) {
-			List<Pagelable> matchLike = pagelableMapper.matchLike(lableInfo);
-			if (matchLike == null||matchLike.size()==0) {
-				return null;
-			}else if (matchLike.size()==1||matchLike.size()>1) {
-				if (matchLike.size()>1) {
-					System.out.println("中文【"+lableInfo+"】模糊匹配到了多个");
-				}
-				return matchLike.get(0);
-			}
+			//机器没法确定该怎么模糊，只能直接用这个词模糊，这样效果差，不如不处理
+//			List<Pagelable> matchLike = pagelableMapper.matchLike(lableInfo);
+//			if (matchLike == null||matchLike.size()==0) {
+//				return null;
+//			}else if (matchLike.size()==1||matchLike.size()>1) {
+//				if (matchLike.size()>1) {
+//					System.out.println("中文【"+lableInfo+"】模糊匹配到了多个");
+//				}
+//				return matchLike.get(0);
+//			}
 		}else if (exactlyList.size()==1||exactlyList.size()>1) {
 			if (exactlyList.size()>1) {
 				System.out.println("中文【"+lableInfo+"】精确匹配到了多个");
