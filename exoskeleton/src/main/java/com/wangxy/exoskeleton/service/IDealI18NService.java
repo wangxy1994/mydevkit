@@ -99,4 +99,11 @@ public interface IDealI18NService {
 
 	String toStrictJson(String options);
 
+	/**
+	 * 替换js代码
+	 * @param path
+	 * @throws IOException 
+	 */
+	void jsCodeReplace(String path) throws IOException;
+
 }

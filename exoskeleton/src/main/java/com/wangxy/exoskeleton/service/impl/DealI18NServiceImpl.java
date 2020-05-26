@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.wangxy.exoskeleton.api.BaiduTranslateUtil;
 import com.wangxy.exoskeleton.entity.DictItem;
@@ -135,6 +136,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 			res.setSource(entry.getKey());
 			String lineToTranslate = res.getSource().substring(1,res.getSource().length()-1);
 			String transResult = BaiduTranslateUtil.translate4PrdUpt(lineToTranslate, "auto", "en");
+			transResult = transResult.replace("< br >", "<br>");
 			res.setTranslateResult(transResult);
 			res.setJsonKey(res.getPageId()+"MsgInfo"+jsonKeyId);//pageidMsgInfo+自增数字是为了避免重复，后面产生文件后还要自己修改
 //				pageLableService.addPagelable(convertTranslateResultToPagelable(res));
@@ -144,16 +146,18 @@ public class DealI18NServiceImpl implements IDealI18NService {
 			enJsMap.put(res.getJsonKey(), res.getTranslateResult());
 			jsonKeyId++;
         }
-        JSONObject enjson = new JSONObject(enJsMap);
-        JSONObject cnjson = new JSONObject(cnJsMap);
-        String i18nJsDirectoryPath = directoryPath+"/js/";
-        String cnJsPath = i18nJsDirectoryPath + pageId+".zh_CN.js";
-        String enJsPath = i18nJsDirectoryPath + pageId+".en.js";
-        
-        File cnJs = new File(cnJsPath);
-        FileUtils.write(cnJs, pageId+"Msg="+cnjson.toJSONString(cnjson,true));
-        File enJs = new File(enJsPath);
-    	FileUtils.write(enJs, pageId+"Msg="+enjson.toJSONString(enjson,true));
+        if (cnJsMap.size()>0) {
+        	JSONObject enjson = new JSONObject(enJsMap);
+        	JSONObject cnjson = new JSONObject(cnJsMap);
+        	String i18nJsDirectoryPath = directoryPath+"/js/";
+        	String cnJsPath = i18nJsDirectoryPath + pageId+".zh_CN.js";
+        	String enJsPath = i18nJsDirectoryPath + pageId+".en.js";
+        	
+        	File cnJs = new File(cnJsPath);
+        	FileUtils.write(cnJs, pageId+"Msg="+cnjson.toJSONString(cnjson,true));
+        	File enJs = new File(enJsPath);
+        	FileUtils.write(enJs, pageId+"Msg="+enjson.toJSONString(enjson,true));
+		}
 		
 	}
 
@@ -184,13 +188,13 @@ public class DealI18NServiceImpl implements IDealI18NService {
 				}
 				
 				String cnLang = "zh_CN";
-				String delItemExample = "delete from tsys_dict_item where dict_entry_code='"+dictEntryCode+"' and lang='"+cnLang+"';\n";
+				String delItemExample = "delete from tsys_dict_item where dict_entry_code='"+dictEntryCode+"' and lang='"+cnLang+"';";
 				dictSql.add(delItemExample);
 				dictSql.addAll(cnDictSql);
 				dictSql.add("\n");
 				dictSql.add("\n");
 				String enLang = "en";
-				String delEnItemExample = "delete from tsys_dict_item where dict_entry_code='"+dictEntryCode+"' and lang='"+enLang+"';\n";
+				String delEnItemExample = "delete from tsys_dict_item where dict_entry_code='"+dictEntryCode+"' and lang='"+enLang+"';";
 				dictSql.add(delEnItemExample);
 				dictSql.addAll(enDictSql);
 				dictSql.add("\n");
@@ -380,6 +384,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 			if (!isJsCode) {
 				//遍历key，如果包括key，就去替换
 				for (Map.Entry<String, TranslateResult> entry : htmlCodeMap.entrySet()) {
+					
 					if (ss.contains(entry.getKey())) {
 						TranslateResult translateResult = entry.getValue();
 						resultLine = resultLine.replace(entry.getKey(), gen18NTag(translateResult));
@@ -392,7 +397,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 		return reultLines;
 	}
 	
-	public List<String> replaceDeal4Js(List<String> oriList,Map<String, TranslateResult> jsCodeMap) throws IOException {
+	public List<String> replaceDeal4Js(List<String> oriList,JSONObject jsCodeMap,String jsonObjName) throws IOException {
 		List<String> reultLines = new ArrayList<>();
 		boolean isJsCode = false;
 		for (String ss : oriList) {
@@ -400,13 +405,19 @@ public class DealI18NServiceImpl implements IDealI18NService {
 			if (ss.contains("<script>")) {
 				isJsCode = true;
 			}
-			if (!isJsCode) {
+			if (isJsCode) {
 				//遍历key，如果包括key，就去替换
-				for (Map.Entry<String, TranslateResult> entry : jsCodeMap.entrySet()) {
-					//TODO 优化。如果替换了一次就退出单层循环.如果确定一行只有一句中文
-					if (ss.contains(entry.getKey())) {
-						TranslateResult translateResult = entry.getValue();
-						resultLine = resultLine.replace(entry.getKey(), genJsMsg(translateResult));
+				for (Map.Entry<String, Object> entry : jsCodeMap.entrySet()) {
+					//如果替换了一次就退出单层循环.如果确定一行只有一句中文。一行可能有多句中文所以不能只替换一次就退出
+					
+					String cnValue = String.valueOf(entry.getValue());
+					String jsonKey = jsonObjName+"."+entry.getKey();
+					if (ss.contains(cnValue)) {
+						String tempRegex = "[\"|']"+cnValue+"[\"|']";
+						List<String> matchString = getMatchString(ss, tempRegex);
+						for (String matchWord : matchString) {
+							resultLine = resultLine.replace(matchWord, jsonKey);
+						}
 					}
 				}
 			}
@@ -618,6 +629,8 @@ public class DealI18NServiceImpl implements IDealI18NService {
 			options = options.replaceAll("	", "");
 			options = options.replaceAll("&codes=(.*?)',", "',");//勉强模式匹配codes的值，把codes的配置替换为空
 			
+			options = options.replaceAll(",prompt:'(.*?)',", "',");//勉强模式匹配prompt的值，把prompt替换为空
+			
 //			options = options.replaceAll("\r\n|\r|\n", "");
 			options = options.replaceAll("\r", "");
 			options = options.replaceAll("\n", "");
@@ -741,6 +754,52 @@ public class DealI18NServiceImpl implements IDealI18NService {
 	        newWord+=word;
 	    }
 		return newWord.replaceFirst(" ", "");//用于去掉第一个空格
+	}
+
+	@Override
+	public void jsCodeReplace(String path) throws IOException {
+		String pageId = null;
+        String directoryPath = null;
+        File file = new File(path);
+        File[] tempList = new File[1];
+        if (file.isDirectory()) {
+        	tempList = file.listFiles();
+        	//要只取一层目录下的文件
+        	directoryPath = path;
+        	String[] split = directoryPath.split("\\\\");
+        	pageId = split[split.length-1];
+		}else {
+			tempList[0]= file;
+			directoryPath = file.getParent();
+			String[] pathPart = path.split("\\.");
+			//注意要替换转义字符\得用\\\\
+			String[] folderAndFile = pathPart[0].split("\\\\");
+			//文件名
+			pageId = folderAndFile[folderAndFile.length - 1];
+		}
+        //读取文件，json
+        String cnJsPath = directoryPath+"/js/"+pageId+".zh_CN.js";
+        File cnJs = new File(cnJsPath);
+        String cnJsContent = FileUtils.readFileToString(cnJs, "UTF-8");
+        JSONObject cnjsJsonObj = JSON.parseObject(cnJsContent.substring(cnJsContent.indexOf("{")));
+        String jsonObjName = pageId+"Msg";
+        
+        for (File file1 : tempList) {
+        	String absolutePath = file1.getAbsolutePath();
+        	
+        	List<String> list = FileUtils.readLines(new File(absolutePath));
+        	// 固定替换
+        	// js代码处理。
+        	// 翻译替换
+			List<String> resultList = replaceDeal4Js(list,cnjsJsonObj,jsonObjName);
+        	// 固定替换后进行翻译替换
+        	// resultList = translateDeal(resultList);
+        	
+        	//直接覆盖原文件
+        	File resultFile = new File(absolutePath);
+        	FileUtils.writeLines(resultFile, resultList);
+        }
+		
 	}
 
 

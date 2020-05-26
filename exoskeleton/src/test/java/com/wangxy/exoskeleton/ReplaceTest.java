@@ -17,7 +17,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.wangxy.exoskeleton.entity.TranslateResult;
 
 public class ReplaceTest {
     public static void main(String[] args) throws IOException{
@@ -30,6 +32,16 @@ public class ReplaceTest {
 			System.out.println(string.substring(1,string.length()-1));
 			System.out.println("\"8976\"".substring(1,"\"8976\"".length()-1));
 		}
+        
+        String resultLine = "'需求日期'";
+        String tempRegex = "[\"|']"+"需求日期"+"[\"|']";
+		String labelKey = "date";
+		List<String> matchString1 = getMatchString(resultLine, tempRegex);
+		for (String matchWord : matchString1) {
+			resultLine = resultLine.replace(matchWord, matchWord.substring(0, 1)+labelKey+matchWord.substring(matchWord.length()-1));
+			System.out.println("resultLine=="+resultLine);
+		}
+        
         
         Map<String, Object> enJsMap = new HashMap<String, Object>();
         enJsMap.put("msgInfo1", "There is no information configured for this currency pair");
@@ -126,6 +138,11 @@ public class ReplaceTest {
 		}
 
 		options = options.replaceAll("\\n", "");
+		
+		
+		String cnJsContent = "";
+		JSONObject cnjsJsonObj = JSON.parseObject(cnJsContent.substring(cnJsContent.indexOf("{")));
+		
     }
     
     public static String toStrictJson(String options) {

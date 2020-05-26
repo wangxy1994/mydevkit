@@ -33,5 +33,21 @@ public class CaveController{
 		
 		return "OK";
 	}
+	
+	@RequestMapping("/adjust")
+	public String adjust(@Param("path") String path) throws IOException {
+		System.out.println("path==="+path);
+		if (path==null||path.trim().length()==0) {
+			path = "G:/同步dev/国际化/virtualcombiBefore/";
+//			path = "I:/同步dev/国际化/virtualcombiBefore/";
+		}
+		
+		long startTime = System.currentTimeMillis(); //获取开始时间
+		dealI18NService.jsCodeReplace(path);
+		long endTime = System.currentTimeMillis(); //获取结束时间
+		logger.info("服务响应时间：" + (endTime - startTime) + "ms"); //输出程序运行时间
+		
+		return "OK";
+	}
 
 }
