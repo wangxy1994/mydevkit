@@ -112,7 +112,9 @@ public class Cell {
      */
     private String progress_nm;
     /**
-     * 类型。可转债/可交换债
+     * 类型。
+     * 可转债/可交换债
+     * Y/N
      */
     private String cb_type;
     /**
