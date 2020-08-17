@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import com.wangxy.exoskeleton.api.tushare.TushareApi;
+import com.wangxy.exoskeleton.api.tushare.vo.StockBasic;
 import com.wangxy.exoskeleton.vo.JslListResponseData;
 import com.wangxy.exoskeleton.vo.Row;
 
@@ -28,6 +30,8 @@ public class DataController{
 	private static Logger logger = LoggerFactory.getLogger(DataController.class);
 	@Autowired
 	RestTemplate restTemplate;
+	@Autowired
+	TushareApi tushareApi;
 
 	@RequestMapping("/preCBList")
 	public String getPreCBList(@Param("progress") String progress,@Param("rp") String rp) {
@@ -68,6 +72,15 @@ public class DataController{
 		logger.info("服务响应时间：" + (endTime - startTime) + "ms"); //输出程序运行时间
 		
 		return "OK";
+	}
+	
+	@RequestMapping("/stockBasic")
+	public List<StockBasic> getStockBasic() {
+		String is_hs = null;
+		String list_status = null;
+		String exchange = null;
+		List<StockBasic> stock_basic = tushareApi.stock_basic(is_hs, list_status, exchange);
+		return stock_basic; 
 	}
 	
 	@RequestMapping("/adjust")
