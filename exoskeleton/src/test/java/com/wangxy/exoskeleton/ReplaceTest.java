@@ -2,6 +2,8 @@ package com.wangxy.exoskeleton;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +18,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.util.DigestUtils;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -23,6 +26,16 @@ import com.wangxy.exoskeleton.entity.TranslateResult;
 
 public class ReplaceTest {
     public static void main(String[] args) throws IOException{
+    	LocalDateTime dateTime = LocalDateTime.now();
+    	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");  
+    	System.out.println(dateTime.format(formatter)); 
+    	
+    	String md5Time = DigestUtils.md5DigestAsHex(dateTime.format(formatter).getBytes());
+    	String token = "7f8faf8e1dff64acc5095c4d64b6f34f";
+    	String sign = DigestUtils.md5DigestAsHex((token+md5Time).getBytes());
+    	System.out.println("sign="+sign);
+    	
+    	System.out.println(1/0);
         System.out.println("hello");
         String line = "asynExecute('bfm.basedata.virtualcombi.VirtualCombiUpdate.service?resCode=virtualCombi&opCode=delService',res,succ, null,'1正在删除+++') ;";
 //        System.out.println(line.replaceAll(",'(.*)\\+{3,}'",",processing"));
