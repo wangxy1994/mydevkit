@@ -31,18 +31,18 @@
             <optional>true</optional>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.oracle/ojdbc6 -->
-        <dependency>
+       <!--  <dependency>
             <groupId>com.oracle</groupId>
             <artifactId>ojdbc6</artifactId>
             <version>12.1.0.1</version>
-        </dependency>
-        <!-- 公司环境 -->
-        <!--<dependency>
-		    <groupId>com.oracle</groupId>
-		    <artifactId>ojdbc6</artifactId>
-		    <version>12.1.0.1-atlassian-hosted</version>
-		   &lt;!&ndash;  <scope>test</scope> &ndash;&gt;
-		</dependency>-->
+        </dependency> -->
+		<!-- 公司环境 -->
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc6</artifactId>
+			<version>12.1.0.1-atlassian-hosted</version>
+			<!-- <scope>test</scope> -->
+		</dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

@@ -604,7 +604,7 @@ public class DealI18NServiceImpl implements IDealI18NService {
 	public Map<String,String> jsoupGetCnWordFromHtml(String path) throws IOException {
 		File input = new File(path);
 		Document doc = Jsoup.parse(input, "UTF-8");
-		
+//		doc.getElementById("stock_detail")
 		Map<String,String> chinese = new HashMap<String,String>();
 		//th标签属性
 		Elements allTh = doc.getElementsByTag("th");
