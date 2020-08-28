@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +28,29 @@ import com.wangxy.exoskeleton.entity.TranslateResult;
 
 public class ReplaceTest {
     public static void main(String[] args) throws IOException{
+    	System.out.println("1".compareTo("2"));
+    	PrdFeeBalance pb1 = new PrdFeeBalance();
+    	pb1.setFeeCalMethod("1");
+    	PrdFeeBalance pb2 = new PrdFeeBalance();
+    	pb2.setFeeCalMethod("2");
+    	List<PrdFeeBalance> prdFeeBalances = new ArrayList<PrdFeeBalance>();
+    	prdFeeBalances.add(pb2);
+    	prdFeeBalances.add(pb1);
+    	for (PrdFeeBalance prdFeeBalance : prdFeeBalances) {
+    		System.out.println(prdFeeBalance.getFeeCalMethod());
+		}
+    	Collections.sort(prdFeeBalances, new Comparator<PrdFeeBalance>() {
+	            @Override
+	            public int compare(PrdFeeBalance o1, PrdFeeBalance o2) {
+	                //升序
+	                return o1.getFeeCalMethod().compareTo(o2.getFeeCalMethod());
+	            }
+	    });
+    	for (PrdFeeBalance prdFeeBalance : prdFeeBalances) {
+    		System.out.println(prdFeeBalance.getFeeCalMethod());
+		}
+    	
+    	
     	LocalDateTime dateTime = LocalDateTime.now();
     	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmm");  
     	System.out.println(dateTime.format(formatter)); 

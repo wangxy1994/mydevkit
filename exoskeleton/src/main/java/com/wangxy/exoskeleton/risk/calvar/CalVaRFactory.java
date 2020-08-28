@@ -15,6 +15,7 @@ package com.wangxy.exoskeleton.risk.calvar;
 
 import com.wangxy.exoskeleton.risk.exception.BizBussinessException;
 import com.wangxy.exoskeleton.risk.exception.IErrMsg;
+import com.wangxy.exoskeleton.risk.util.SpringContextUtil;
 
 public class CalVaRFactory{
 	/** 正态分布法 */
@@ -27,12 +28,12 @@ public class CalVaRFactory{
 	public static ICalVaR get(String calMethod) throws BizBussinessException {
 		if(CDF.equals(calMethod)){
 			//使用B方法进行处理
-			return ServiceFactory.getBean(ICalVaR.class, "cdfCalVaR");
+			return SpringContextUtil.getBean("cdfCalVaR",ICalVaR.class);
 			//return ServiceFactory.getBean(IICalVaR.class, "cdfCalVaR2");
 		}else if(HISTORICAL.equals(calMethod)){
-			return ServiceFactory.getBean(ICalVaR.class, "historicalCalVaR");
+			return SpringContextUtil.getBean("historicalCalVaR",ICalVaR.class);
 		}else if(MONTE_CARLO.equals(calMethod)){
-			return ServiceFactory.getBean(ICalVaR.class, "monteCarloCalVaR");
+			return SpringContextUtil.getBean("monteCarloCalVaR",ICalVaR.class);
 		}else{
 			throw new BizBussinessException(IErrMsg.ERR_PARAMETER,"不支持的var值计算方法");
 		}

@@ -25,6 +25,7 @@ import com.wangxy.exoskeleton.risk.bulkcomvar.interfaces.IBulkComVar;
 import com.wangxy.exoskeleton.risk.calvar.CalVaRFactory;
 import com.wangxy.exoskeleton.risk.calvar.ICalVaR;
 import com.wangxy.exoskeleton.risk.exception.BizBussinessException;
+import com.wangxy.exoskeleton.risk.exception.IErrMsg;
 import com.wangxy.exoskeleton.risk.imarketcal.VarCalController;
 import com.wangxy.exoskeleton.risk.var.VaRParam;
 import com.wangxy.exoskeleton.risk.var.VaRResult;
@@ -32,7 +33,7 @@ import com.wangxy.exoskeleton.risk.vo.VarCalParamDetail;
 
 @Service
 public class BulkComVar implements IBulkComVar{
-	private static Logger logger = LoggerFactory.getLogger(VarCalController.class);
+	private static Logger logger = LoggerFactory.getLogger(BulkComVar.class);
 	/**
 	 * 大宗商品var计算
 	 * @param calMethod      计算方法
@@ -45,7 +46,7 @@ public class BulkComVar implements IBulkComVar{
 	 * @return
 	 * @throws Exception 
 	 */
-	public VaRResult cal(String calMethod, List<VarCalParamDetail> varCalParamDetail, int calDate, int num, double percentile,int simulatedtimes,int days) throws Exception{
+	public VaRResult cal(String calMethod, List<VarCalParamDetail> varCalParamDetail, int calDate, int num, double percentile,int simulatedtimes,int days) throws BizBussinessException{
 		if(varCalParamDetail!=null && varCalParamDetail.get(0)!=null){
 			List<VaRParam> paramlist = new ArrayList<VaRParam>();
 			VarCalParamDetail effectBulkComVarParam = null;
@@ -56,7 +57,7 @@ public class BulkComVar implements IBulkComVar{
 					priceArray = BulkComPriceUtil.getPrice(detail.getAssetId(), detail.getTargetCurr(), calDate, num);
 				}  catch (BizBussinessException e) {
 					//如果当前币种行情数据不足就不参与计算
-					if ("ERR_LACK_OF_DATA".equals(e.getCode())) {
+					if (IErrMsg.ERR_LACK_OF_DATA.equals(e.getCode())) {
 //						logger.error(detail.getAssetId()+"不参与计算",e);
 						continue;
 					}else {
@@ -72,7 +73,7 @@ public class BulkComVar implements IBulkComVar{
 				effectBulkComVarParam = detail;
 			}
 			if (paramlist.size()==0) {
-				throw new Exception("请求的大宗商品的价格样本数量都不足");
+				throw new BizBussinessException(IErrMsg.ERR_LACK_OF_DATA,"请求的大宗商品的价格样本数量都不足");
 			}
 			ICalVaR calVar = CalVaRFactory.get(calMethod);
 			VaRResult varResult=calVar.calVarAndDtl(paramlist, percentile, simulatedtimes, days);

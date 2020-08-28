@@ -21,17 +21,18 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.avengers.base.constant.IErrMsg;
-import com.avengers.base.util.BigDecimalUtil;
-import com.avengers.framework.impl.bizkernel.runtime.exception.BizBussinessException;
-import com.avengers.risk.var.CdfVaRC;
-import com.avengers.risk.var.CdfVaRC.CdfVaRCResult;
-import com.avengers.risk.var.PortfolioCalUtil;
-import com.avengers.risk.var.VaRParam;
-import com.avengers.risk.var.VaRResult;
-import com.avengers.risk.var.VaRResultCdf;
-import com.avengers.risk.var.VaRResultDtl;
-import com.avengers.risk.var.VaRResultDtlCdf;
+import com.wangxy.exoskeleton.risk.exception.BizBussinessException;
+import com.wangxy.exoskeleton.risk.exception.IErrMsg;
+import com.wangxy.exoskeleton.risk.util.BigDecimalUtil;
+import com.wangxy.exoskeleton.risk.var.CdfVaRC;
+import com.wangxy.exoskeleton.risk.var.CdfVaRC.CdfVaRCResult;
+import com.wangxy.exoskeleton.risk.var.PortfolioCalUtil;
+import com.wangxy.exoskeleton.risk.var.VaRParam;
+import com.wangxy.exoskeleton.risk.var.VaRResult;
+import com.wangxy.exoskeleton.risk.var.VaRResultCdf;
+import com.wangxy.exoskeleton.risk.var.VaRResultDtl;
+import com.wangxy.exoskeleton.risk.var.VaRResultDtlCdf;
+
 
 @Service
 public class CdfCalVaR2 extends AbstractCalVaR{

@@ -296,5 +296,6 @@ public class IErrMsg {
 	
 	/** 通用错误 */
 	public static final String ERR_COMMERR = "0003";
+	public static final String ERR_LACK_OF_DATA = "0069";
 }
 

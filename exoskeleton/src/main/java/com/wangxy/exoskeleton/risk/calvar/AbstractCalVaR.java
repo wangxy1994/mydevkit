@@ -19,19 +19,15 @@ package com.wangxy.exoskeleton.risk.calvar;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import com.wangxy.exoskeleton.risk.exception.BizBussinessException;
+import com.wangxy.exoskeleton.risk.exception.IErrMsg;
+import com.wangxy.exoskeleton.risk.util.BigDecimalUtil;
+import com.wangxy.exoskeleton.risk.var.CdfVaR;
+import com.wangxy.exoskeleton.risk.var.PortfolioCalUtil;
+import com.wangxy.exoskeleton.risk.var.VaRParam;
+import com.wangxy.exoskeleton.risk.var.VaRResult;
+import com.wangxy.exoskeleton.risk.var.VaRResultDtl;
 
-import com.avengers.base.business.ServiceFactory;
-import com.avengers.base.constant.IErrMsg;
-import com.avengers.base.util.BigDecimalUtil;
-import com.avengers.framework.impl.bizkernel.runtime.exception.BizBussinessException;
-import com.avengers.pub.business.currency.interfaces.ICurrencyService;
-import com.avengers.pub.domain.bean.Currency;
-import com.avengers.risk.var.CdfVaR;
-import com.avengers.risk.var.PortfolioCalUtil;
-import com.avengers.risk.var.VaRParam;
-import com.avengers.risk.var.VaRResult;
-import com.avengers.risk.var.VaRResultDtl;
 
 public abstract class AbstractCalVaR implements ICalVaR{
 	
@@ -116,14 +112,16 @@ public abstract class AbstractCalVaR implements ICalVaR{
 	 * @throws BizBussinessException
 	 */
 	protected int getDecimalPoint(List<VaRParam> paramlist) throws BizBussinessException {
-		if(paramlist!=null && !paramlist.isEmpty() && paramlist.get(0)!=null && StringUtils.isNotBlank(paramlist.get(0).getTargetCurr())){
-			String targetCurr = paramlist.get(0).getTargetCurr();
-			Currency currency = ServiceFactory.getBean(ICurrencyService.class).getCurrency(targetCurr);
-			if(currency==null){
-				throw new BizBussinessException(IErrMsg.ERR_PARAMETER,"找不到"+targetCurr+"币种信息！");
-			}
-			return currency.getDecimalPoint();
-		}
+//		
+//		if(paramlist!=null && !paramlist.isEmpty() && paramlist.get(0)!=null && StringUtils.isNotBlank(paramlist.get(0).getTargetCurr())){
+//			String targetCurr = paramlist.get(0).getTargetCurr();
+//			Currency currency = ServiceFactory.getBean(ICurrencyService.class).getCurrency(targetCurr);
+//			if(currency==null){
+//				throw new BizBussinessException(IErrMsg.ERR_PARAMETER,"找不到"+targetCurr+"币种信息！");
+//			}
+//			return currency.getDecimalPoint();
+//		}
+//		
 		//金额默认两位小数
 		return 2;
 	}

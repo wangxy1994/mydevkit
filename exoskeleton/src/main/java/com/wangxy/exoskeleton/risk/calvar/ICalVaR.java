@@ -15,9 +15,10 @@ package com.wangxy.exoskeleton.risk.calvar;
 
 import java.util.List;
 
-import com.avengers.framework.impl.bizkernel.runtime.exception.BizBussinessException;
-import com.avengers.risk.var.VaRParam;
-import com.avengers.risk.var.VaRResult;
+import com.wangxy.exoskeleton.risk.exception.BizBussinessException;
+import com.wangxy.exoskeleton.risk.var.VaRParam;
+import com.wangxy.exoskeleton.risk.var.VaRResult;
+
 
 public interface ICalVaR {
 	
